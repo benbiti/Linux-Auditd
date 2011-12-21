@@ -1,0 +1,91 @@
+# First rule - delete all
+-D
+
+# Increase the buffers to survive stress events.
+# Make this bigger for busy systems
+-b 2048
+
+# Feel free to add below this line. See auditctl man page
+
+#Capture all failures to access on critical elements
+-a exit,always -F arch=b64 -S open -F dir=/etc -F success=0 -k CriticalElementFailures
+-a exit,always -F arch=b64 -S open -F dir=/bin -F success=0 -k CriticalElementFailures
+-a exit,always -F arch=b64 -S open -F dir=/sbin -F success=0 -k CriticalElementFailures
+-a exit,always -F arch=b64 -S open -F dir=/usr/bin -F success=0 -k CriticalElementFailures
+-a exit,always -F arch=b64 -S open -F dir=/usr/sbin -F success=0 -k CriticalElementFailures
+-a exit,always -F arch=b64 -S open -F dir=/var -F success=0 -k CriticalElementFailures
+-a exit,always -F arch=b64 -S open -F dir=/home -F success=0 -k CriticalElementFailures
+
+#Capture all successful deletions on critical elements
+-a exit,always -F arch=b64 -S unlinkat -F success=1 -F dir=/etc -k CriticalElementDeletions
+-a exit,always -F arch=b64 -S unlinkat -F success=1 -F dir=/bin -k CriticalElementDeletions
+-a exit,always -F arch=b64 -S unlinkat -F success=1 -F dir=/sbin -k CriticalElementDeletions
+-a exit,always -F arch=b64 -S unlinkat -F success=1 -F dir=/usr/bin -k CriticalElementDeletions
+-a exit,always -F arch=b64 -S unlinkat -F success=1 -F dir=/usr/sbin -k CriticalElementDeletions
+-a exit,always -F arch=b64 -S unlinkat -F success=1 -F dir=/var -k CriticalElementDeletions
+
+#Capture all successful modification of owner or permissions on critical elements
+-a exit,always -F arch=b64 -S fchmodat -S fchownat -F dir=/etc -F success=1 -k CriticalElementModifications
+-a exit,always -F arch=b64 -S fchmodat -S fchownat -F dir=/bin -F success=1 -k CriticalElementModifications
+-a exit,always -F arch=b64 -S fchmodat -S fchownat -F dir=/sbin -F success=1 -k CriticalElementModifications
+-a exit,always -F arch=b64 -S fchmodat -S fchownat -F dir=/usr/bin -F success=1 -k CriticalElementModifications
+-a exit,always -F arch=b64 -S fchmodat -S fchownat -F dir=/usr/sbin -F success=1 -k CriticalElementModifications
+-a exit,always -F arch=b64 -S fchmodat -S fchownat -F dir=/var -F success=1 -k CriticalElementModifications
+-a exit,always -F arch=b64 -S fchmodat -S fchownat -F dir=/home -F success=1 -k CriticalElementModifications
+
+#Capture all successful modifications of content
+-a exit,always -F arch=b64 -S pwrite64 -S write -S writev -S pwritev -F dir=/etc -F success=1 -k CriticalElementModifications
+-a exit,always -F arch=b64 -S pwrite64 -S write -S writev -S pwritev -F dir=/bin -F success=1 -k CriticalElementModifications
+-a exit,always -F arch=b64 -S pwrite64 -S write -S writev -S pwritev -F dir=/sbin -F success=1 -k CriticalElementModifications
+-a exit,always -F arch=b64 -S pwrite64 -S write -S writev -S pwritev -F dir=/usr/bin -F success=1 -k CriticalElementModifications
+-a exit,always -F arch=b64 -S pwrite64 -S write -S writev -S pwritev -F dir=/usr/sbin -F success=1 -k CriticalElementModifications
+-a exit,always -F arch=b64 -S pwrite64 -S write -S writev -S pwritev -F dir=/var -F success=1 -k CriticalElementModifications
+-a exit,always -F arch=b64 -S pwrite64 -S write -S writev -S pwritev -F dir=/home -F success=1 -k CriticalElementModifications
+
+#Capture all successful creations
+-a exit,always -F arch=b64 -S creat -F dir=/etc -F success=1 -k CriticalElementCreations
+-a exit,always -F arch=b64 -S creat -F dir=/bin -F success=1 -k CriticalElementCreations
+-a exit,always -F arch=b64 -S creat -F dir=/sbin -F success=1 -k CriticalElementCreations
+-a exit,always -F arch=b64 -S creat -F dir=/usr/bin -F success=1 -k CriticalElementCreations
+-a exit,always -F arch=b64 -S creat -F dir=/usr/sbin -F success=1 -k CriticalElementCreations
+-a exit,always -F arch=b64 -S creat -F dir=/var -F success=1 -k CriticalElementCreations
+
+#Capture all successful reads (only for High-Impact Systems)
+-a exit,always -F arch=b64 -S open -F dir=/etc -F success=1 -k CriticalElementReads
+-a exit,always -F arch=b64 -S open -F dir=/bin -F success=1 -k CriticalElementReads
+-a exit,always -F arch=b64 -S open -F dir=/sbin -F success=1 -k CriticalElementReads
+-a exit,always -F arch=b64 -S open -F dir=/usr/bin -F success=1 -k CriticalElementReads
+-a exit,always -F arch=b64 -S open -F dir=/usr/sbin -F success=1 -k CriticalElementReads
+-a exit,always -F arch=b64 -S open -F dir=/var -F success=1 -k CriticalElementReads
+
+#Monitor for changes to shadow file (use of passwd command)
+-w /usr/bin/passwd -p x
+-w /etc/passwd -p ra
+-w /etc/shadow -p ra
+
+#Monitor for use of process ID change (switching accounts) applications
+-w /bin/su -p x -k PrivilegeEscalation
+-w /usr/bin/sudo -p x -k PrivilegeEscalation
+-w /etc/sudoers -p rw -k PrivilegeEscalation
+
+#Monitor for use of tools to change group identifiers
+-w /usr/sbin/groupadd -p x -k GroupModification
+-w /usr/sbin/groupmod -p x -k GroupModification
+-w /usr/sbin/useradd -p x -k UserModification
+-w /usr/sbin/usermod -p x -k UserModification
+
+#Ensure audit logs are cleared.
+-a exit,always -F arch=b64 -S unlink -S unlinkat -F dir=/var/log/audit -k AuditLogRemoval
+
+# Monitor for use of audit management tools
+-w /sbin/auditctl -p x -k AuditModification
+-w /sbin/auditd -p x -k AuditModification
+
+#  Ensure critical apps are monitored.  List will vary by mission.
+-a exit,always -F arch=b64 -F path=/sbin/init -k CriticalAppMonitoring
+-a exit,always -F arch=b64 -F path=/usr/bin/Xorg -k CriticalAppMonitoring
+-a exit,always -F arch=b64 -F path=/usr/sbin/sshd -k CriticalAppMonitoring
+-a exit,always -F arch=b64 -F path=/sbin/rsyslogd -k CriticalAppMonitoring
+
+#  Ensure attribute changes are audited
+-a exit,always -F arch=b64 -S chmod -S chown -S fchmod -S fchown -S setuid -S setreuid -S getxattr -S setxattr -k AttributeChanges
